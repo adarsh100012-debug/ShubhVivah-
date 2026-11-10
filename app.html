@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#075E54">
+<link rel="manifest" href="manifest.json">
+<title>विवाह सूचक</title>
+<style>
+:root{--g:#075E54;--g2:#128C7E;--bg:#ECE5DD;--me:#DCF8C6;--tx:#111B21;--mu:#667781}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{font-family:system-ui,-apple-system,"Noto Sans Devanagari",sans-serif;background:var(--bg);color:var(--tx);display:flex;flex-direction:column}
+header{background:var(--g);color:#fff;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;display:flex;align-items:center;gap:10px}
+header h1{font-size:18px;font-weight:600;flex:1}
+header button{background:none;border:0;color:#fff;font-size:14px;padding:6px 8px}
+.tabs{display:flex;background:var(--g)}
+.tabs button{flex:1;padding:10px;background:none;border:0;border-bottom:3px solid transparent;color:#cfe;font-size:14px}
+.tabs button.on{color:#fff;border-color:#25D366}
+main{flex:1;overflow-y:auto;padding:10px}
+.center{max-width:360px;margin:12vh auto;background:#fff;padding:24px;border-radius:10px}
+.center h2{margin-bottom:6px;color:var(--g)}
+.center p{color:var(--mu);font-size:14px;margin-bottom:14px}
+input,textarea{width:100%;padding:12px;border:1px solid #ccd;border-radius:8px;font-size:16px;margin-bottom:10px;font-family:inherit}
+.btn{width:100%;padding:12px;border:0;border-radius:8px;background:var(--g2);color:#fff;font-size:16px}
+.btn.sm{width:auto;padding:8px 14px;font-size:14px}
+.btn.red{background:#c0392b}
+.msg{color:#c0392b;font-size:14px;margin-top:8px;min-height:18px}
+.bubble{background:#fff;border-radius:0 10px 10px 10px;padding:6px;margin:6px 40px 6px 0;max-width:420px;box-shadow:0 1px 1px rgba(0,0,0,.13)}
+.bubble.me{background:var(--me);border-radius:10px 0 10px 10px;margin:6px 0 6px 40px;margin-left:auto}
+.bubble img{width:100%;border-radius:6px;display:block}
+.bubble .cap{padding:6px 6px 2px;white-space:pre-wrap;font-size:15px}
+.bubble .time{font-size:11px;color:var(--mu);text-align:right;padding:0 6px 2px}
+.bubble a.pdf{display:block;padding:12px;background:#f0f2f5;border-radius:6px;color:var(--tx);text-decoration:none}
+.bubble .act{padding:4px}
+.card{background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.card .n{flex:1}.card small{color:var(--mu);display:block}
+footer{background:#f0f2f5;padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;align-items:flex-end}
+footer textarea{margin:0;flex:1;max-height:90px;border-radius:20px;padding:10px 14px}
+footer .attach{background:none;border:0;font-size:24px;padding:6px}
+footer .send{background:var(--g2);color:#fff;border:0;border-radius:50%;width:44px;height:44px;font-size:18px}
+.hide{display:none!important}
+.sel{font-size:12px;color:var(--mu);padding:2px 6px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<main id="login">
+  <div class="center">
+    <h2>विवाह सूचक</h2>
+    <p>तुमच्या मोबाईल नंबरने लॉगिन करा. फक्त अ‍ॅडमिनने जोडलेले सदस्यच प्रवेश करू शकतात.</p>
+    <div id="s1">
+      <input id="ph" type="tel" inputmode="numeric" maxlength="10" placeholder="१० अंकी मोबाईल नंबर">
+      <button class="btn" id="getotp">OTP पाठवा</button>
+    </div>
+    <div id="s2" class="hide">
+      <input id="otp" type="tel" inputmode="numeric" maxlength="6" placeholder="६ अंकी OTP">
+      <button class="btn" id="verify">लॉगिन करा</button>
+    </div>
+    <div class="msg" id="lmsg"></div>
+    <div id="rc"></div>
+  </div>
+</main>
+
+<!-- APP -->
+<div id="app" class="hide" style="display:flex;flex-direction:column;flex:1;min-height:0">
+  <header><h1>विवाह सूचक</h1><button id="out">बाहेर पडा</button></header>
+  <div class="tabs" id="tabs">
+    <button class="on" data-t="feed">बायोडाटा</button>
+    <button data-t="int" class="adm">आवडले (Interested)</button>
+    <button data-t="mem" class="adm">सदस्य</button>
+  </div>
+  <main id="feed"></main>
+  <main id="int" class="hide"></main>
+  <main id="mem" class="hide">
+    <div class="card" style="display:block">
+      <input id="mn" placeholder="सदस्याचे नाव">
+      <input id="mp" type="tel" inputmode="numeric" maxlength="10" placeholder="मोबाईल नंबर (१० अंकी)">
+      <button class="btn" id="addm">सदस्य जोडा</button>
+      <div class="msg" id="mmsg"></div>
+    </div>
+    <div id="mlist"></div>
+    <button class="btn red" id="clean" style="margin-top:10px">३० दिवसांपेक्षा जुने बायोडाटा हटवा</button>
+  </main>
+  <footer id="composer" class="hide">
+    <label class="attach">📎<input id="file" type="file" accept="image/*" multiple hidden></label>
+    <textarea id="cap" rows="1" placeholder="फोटो निवडा आणि माहिती लिहा"></textarea>
+    <button class="send" id="send">➤</button>
+  </footer>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* ====== १) येथे तुमचे Firebase config टाका ====== */
+const firebaseConfig = {
+  apiKey: "AIzaSyDxoxIIhD8qZ-iskdHJXkNfPVwO-HGR9Fg",
+  authDomain: "shubh-vivah-c5dde.firebaseapp.com",
+  projectId: "shubh-vivah-c5dde",
+  storageBucket: "shubh-vivah-c5dde.firebasestorage.app",
+  messagingSenderId: "775948660002",
+  appId: "1:775948660002:web:843023f113acf6fc71897b"
+};
+/* ====== २) अ‍ॅडमिन (तुमचा) नंबर, +91 सह ====== */
+const ADMIN = "+917385412414";
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth(), db = firebase.firestore();
+auth.languageCode = "mr";
+const $ = id => document.getElementById(id);
+let me = null, isAdmin = false, confirmation = null, unsubs = [], members = {};
+
+/* ---- Login ---- */
+const rv = new firebase.auth.RecaptchaVerifier("rc", {size: "invisible"});
+$("getotp").onclick = async () => {
+  const n = $("ph").value.replace(/\D/g, "").slice(-10);
+  if (n.length !== 10) return $("lmsg").textContent = "१० अंकी नंबर टाका.";
+  $("lmsg").textContent = "OTP पाठवत आहे...";
+  try {
+    confirmation = await auth.signInWithPhoneNumber("+91" + n, rv);
+    $("s1").classList.add("hide"); $("s2").classList.remove("hide"); $("lmsg").textContent = "";
+  } catch (e) {
+    $("lmsg").textContent = "OTP पाठवता आला नाही. कारण: " + (e.code || e.message);
+    try { rv.render().then(id => grecaptcha.reset(id)); } catch (x) {}
+  }
+};
+$("verify").onclick = async () => {
+  try { await confirmation.confirm($("otp").value.trim()); }
+  catch (e) { $("lmsg").textContent = "OTP चुकीचा आहे."; }
+};
+$("out").onclick = () => auth.signOut();
+
+auth.onAuthStateChanged(async u => {
+  unsubs.forEach(f => f()); unsubs = [];
+  if (!u) { $("app").classList.add("hide"); $("login").classList.remove("hide"); return; }
+  me = u.phoneNumber; isAdmin = me === ADMIN;
+  try {
+    if (!isAdmin) {
+      const d = await db.collection("members").doc(me).get();
+      if (!d.exists || !d.data().expires || d.data().expires.toDate() < new Date()) throw 0;
+    }
+  } catch (e) {
+    await auth.signOut();
+    $("lmsg").textContent = "तुमचा प्रवेश नाही किंवा ३ महिन्यांचा प्लॅन संपला आहे. कृपया अ‍ॅडमिनशी संपर्क साधा.";
+    $("s2").classList.add("hide"); $("s1").classList.remove("hide");
+    return;
+  }
+  $("login").classList.add("hide"); $("app").classList.remove("hide");
+  document.querySelectorAll(".adm").forEach(b => b.classList.toggle("hide", !isAdmin));
+  $("tabs").classList.toggle("hide", !isAdmin);
+  $("composer").classList.toggle("hide", !isAdmin);
+  startFeed();
+  if (isAdmin) { startMembers(); startInterests(); }
+});
+
+/* ---- Tabs ---- */
+$("tabs").onclick = e => {
+  const t = e.target.dataset.t; if (!t) return;
+  [...$("tabs").children].forEach(b => b.classList.toggle("on", b === e.target));
+  ["feed", "int", "mem"].forEach(x => $(x).classList.toggle("hide", x !== t));
+  $("composer").classList.toggle("hide", !(isAdmin && t === "feed"));
+};
+
+/* ---- Feed ---- */
+const fmt = ts => ts ? ts.toDate().toLocaleString("mr-IN", {day: "numeric", month: "short", hour: "numeric", minute: "2-digit"}) : "";
+function startFeed() {
+  const sent = JSON.parse(localStorage.getItem("sent_" + me) || "[]");
+  unsubs.push(db.collection("posts").orderBy("t", "desc").limit(60).onSnapshot(s => {
+    const box = $("feed"), atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 150;
+    box.innerHTML = "";
+    [...s.docs].reverse().forEach(d => {
+      const p = d.data(), b = document.createElement("div");
+      b.className = "bubble" + (isAdmin ? " me" : "");
+      if (p.type === "image") { const i = document.createElement("img"); i.src = p.data; i.loading = "lazy"; b.append(i); }
+            if (p.caption) { const c = document.createElement("div"); c.className = "cap"; c.textContent = p.caption; b.append(c); }
+      const t = document.createElement("div"); t.className = "time"; t.textContent = fmt(p.t); b.append(t);
+      if (isAdmin) {
+        const x = document.createElement("div"); x.className = "act";
+        const del = document.createElement("button"); del.className = "btn sm red"; del.textContent = "🗑 हटवा";
+        del.onclick = () => confirm("हा बायोडाटा हटवायचा?") && d.ref.delete();
+        x.append(del); b.append(x);
+      }
+      if (!isAdmin) {
+        const a = document.createElement("div"); a.className = "act";
+        const btn = document.createElement("button"); btn.className = "btn sm";
+        const done = sent.includes(d.id);
+        btn.textContent = done ? "✓ कळवले" : "👍 आवडले";
+        btn.disabled = done;
+        btn.onclick = async () => {
+          btn.disabled = true;
+          await db.collection("interests").add({phone: me, postId: d.id, cap: (p.caption || "").slice(0, 80), t: firebase.firestore.FieldValue.serverTimestamp()});
+          sent.push(d.id); localStorage.setItem("sent_" + me, JSON.stringify(sent)); btn.textContent = "✓ कळवले";
+        };
+        a.append(btn); b.append(a);
+      }
+      box.append(b);
+    });
+    if (atEnd || !box.dataset.init) { box.scrollTop = box.scrollHeight; box.dataset.init = 1; }
+  }));
+}
+
+/* ---- Post (admin) ---- */
+function compress(file) {
+  return new Promise((res, rej) => {
+    const img = new Image(), u = URL.createObjectURL(file);
+    img.onload = () => {
+      const k = Math.min(1, 1100 / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      let q = 0.7, d = c.toDataURL("image/jpeg", q);
+      while (d.length > 700000 && q > 0.3) { q -= 0.1; d = c.toDataURL("image/jpeg", q); }
+      URL.revokeObjectURL(u); res(d);
+    };
+    img.onerror = rej; img.src = u;
+  });
+}
+$("send").onclick = async () => {
+  const files = [...$("file").files], cap = $("cap").value.trim();
+  if (!files.length && !cap) return;
+  $("send").disabled = true; $("send").textContent = "…";
+  const T = () => firebase.firestore.FieldValue.serverTimestamp();
+  try {
+    if (!files.length) await db.collection("posts").add({type: "text", caption: cap, t: T()});
+    for (let i = 0; i < files.length; i++) {
+      await db.collection("posts").add({type: "image", data: await compress(files[i]), caption: i === 0 ? cap : "", t: T()});
+    }
+    $("cap").value = ""; $("file").value = "";
+  } catch (e) { alert("पाठवता आले नाही: " + e.message); }
+  $("send").disabled = false; $("send").textContent = "➤";
+};
+
+/* ---- Members (admin) ---- */
+const plus3 = from => { const d = new Date(from); d.setMonth(d.getMonth() + 3); return d; };
+const dstr = d => d.toLocaleDateString("mr-IN", {day: "numeric", month: "short", year: "numeric"});
+function startMembers() {
+  unsubs.push(db.collection("members").orderBy("name").onSnapshot(s => {
+    members = {}; $("mlist").innerHTML = "";
+    const now = new Date(), expired = [];
+    const top = document.createElement("div"); top.className = "sel";
+    $("mlist").append(top);
+    let active = 0;
+    s.forEach(d => {
+      const m = d.data(); members[d.id] = m.name;
+      const exp = m.expires ? m.expires.toDate() : new Date(0);
+      const left = Math.ceil((exp - now) / 86400000), dead = left <= 0;
+      if (dead) expired.push(d.ref); else active++;
+      const r = document.createElement("div"); r.className = "card"; r.style.flexWrap = "wrap";
+      r.innerHTML = '<div class="n"><b></b><small></small><small></small></div><button class="btn sm ren">+३ महिने</button><button class="btn sm red del">काढा</button>';
+      r.querySelector("b").textContent = m.name;
+      const sm = r.querySelectorAll("small"); sm[0].textContent = d.id;
+      sm[1].textContent = dead ? "⛔ प्लॅन संपला (" + dstr(exp) + ")" : "✅ " + left + " दिवस बाकी (" + dstr(exp) + " पर्यंत)";
+      sm[1].style.color = dead ? "#c0392b" : left <= 7 ? "#d68910" : "#128C7E";
+      r.querySelector(".ren").onclick = () => d.ref.update({expires: firebase.firestore.Timestamp.fromDate(plus3(dead ? now : exp))});
+      r.querySelector(".del").onclick = () => confirm(m.name + " यांना काढायचे?") && d.ref.delete();
+      $("mlist").append(r);
+    });
+    top.textContent = "चालू सदस्य: " + active + " | संपलेले: " + expired.length;
+    if (expired.length) {
+      const b = document.createElement("button"); b.className = "btn red"; b.style.marginBottom = "8px";
+      b.textContent = "संपलेले " + expired.length + " सदस्य काढून टाका";
+      b.onclick = () => confirm(expired.length + " संपलेले सदस्य कायमचे काढायचे?") && Promise.all(expired.map(r => r.delete()));
+      $("mlist").insertBefore(b, top.nextSibling);
+    }
+  }));
+}
+$("addm").onclick = async () => {
+  const n = $("mn").value.trim(), p = $("mp").value.replace(/\D/g, "").slice(-10);
+  if (!n || p.length !== 10) return $("mmsg").textContent = "नाव आणि १० अंकी नंबर टाका.";
+  const now = new Date();
+  await db.collection("members").doc("+91" + p).set({name: n, added: firebase.firestore.Timestamp.fromDate(now), expires: firebase.firestore.Timestamp.fromDate(plus3(now))});
+  $("mn").value = ""; $("mp").value = ""; $("mmsg").textContent = "जोडले ✓ (३ महिने: " + dstr(plus3(now)) + " पर्यंत)";
+};
+
+$("clean").onclick = async () => {
+  if (!confirm("३० दिवसांपेक्षा जुने सर्व बायोडाटा कायमचे हटवायचे?")) return;
+  const cut = firebase.firestore.Timestamp.fromDate(new Date(Date.now() - 30 * 86400000));
+  const q = await db.collection("posts").where("t", "<", cut).limit(400).get();
+  const bt = db.batch(); q.forEach(d => bt.delete(d.ref)); await bt.commit();
+  alert(q.size + " बायोडाटा हटवले.");
+};
+
+/* ---- Interests (admin) ---- */
+function startInterests() {
+  unsubs.push(db.collection("interests").orderBy("t", "desc").limit(200).onSnapshot(s => {
+    $("int").innerHTML = "";
+    if (s.empty) $("int").innerHTML = '<div class="sel">अजून कोणीही "आवडले" दाबलेले नाही.</div>';
+    s.forEach(d => {
+      const i = d.data(), r = document.createElement("div"); r.className = "card";
+      r.innerHTML = '<div class="n"><b></b><small></small><small></small></div><a class="btn sm" style="text-decoration:none">📞</a>';
+      r.querySelector("b").textContent = (members[i.phone] || "सदस्य") + " - " + i.phone;
+      const sm = r.querySelectorAll("small"); sm[0].textContent = "बायोडाटा: " + (i.cap || "(फोटो/PDF)"); sm[1].textContent = fmt(i.t);
+      r.querySelector("a").href = "tel:" + i.phone;
+      $("int").append(r);
+    });
+  }));
+}
+</script>
+</body>
+</html>
